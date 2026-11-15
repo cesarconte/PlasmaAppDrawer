@@ -1,0 +1,28 @@
+{
+	"KPackageStructure": "Plasma/Applet",
+	"KPlugin": {
+		"Authors": [
+			{
+				"Email": "yugurta@gmail.com",
+				"Name": "Cesar"
+			}
+		],
+		"Category": "Application Launchers",
+		"Description": "An app drawer / app library for Plasma inspired by macOS Tahoe and Android",
+		"Description[cs]": "Moderní spouštěč pro Plasma inspirovaný MacOS!",
+		"Description[he]": "משגר מודרני עבור Plasma בהשראת MacOS!",
+		"Description[it]": "Un Lanciatore moderno ispirato a MacOS",
+		"Description[nl]": "Een moderne programmastarter voor Plasma, geïnspireerd op die van macOS!",
+		"Description[pl]": "Nowoczesny launcher dla Plasma inspirowany macOS!",
+		"EnabledByDefault": true,
+		"Icon": "start-here-kde",
+		"Id": "PlasmaAppDrawer",
+		"Name": "App Drawer",
+		"Version": "0.1",
+		"Website": "https://github.com/cesarconte/PlasmaAppDrawer"
+	},
+	"X-Plasma-API-Minimum-Version": "6.0",
+	"X-Plasma-Provides": [
+		"org.kde.plasma.launchermenu"
+	]
+}
