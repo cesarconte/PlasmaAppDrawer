@@ -203,7 +203,7 @@ Item {
                 onTapped: eventPoint => {
                     var modelData = resultDelegate.model;
                     if (modelData) {
-                        var appUrl = modelData.url || "";
+                        var appUrl = modelData.url || (modelData.urls && modelData.urls.length > 0 ? modelData.urls[0] : "") || modelData.favoriteId || "";
                         var favId = modelData.favoriteId || "";
                         var isPinned = (kicker && kicker.isDockPinnedSync && appUrl) ? kicker.isDockPinnedSync(appUrl) : false;
                         var rawActions = (modelData.hasActionList !== null && modelData.actionList) ? modelData.actionList : [];

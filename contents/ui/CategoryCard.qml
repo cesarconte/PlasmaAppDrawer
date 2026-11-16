@@ -105,8 +105,8 @@ Rectangle {
             property var itemData: (categoryCard.categoryModel && targetIndex < categoryCard.categoryModel.count) ? {
                 display: categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), Qt.DisplayRole) || "",
                 decoration: categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), Qt.DecorationRole) || "",
-                url: categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), Qt.UserRole) || "",
-                appId: categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), Qt.UserRole + 1) || ""
+                url: categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), 266) || categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), 259) || "",
+                appId: categoryCard.categoryModel.data(categoryCard.categoryModel.index(targetIndex, 0), 259) || ""
             } : null
 
             radius: CachyTheme.radiusMedium

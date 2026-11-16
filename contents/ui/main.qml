@@ -335,6 +335,9 @@ PlasmoidItem {
         } catch (e) {
         }
 
+        // Refresh dock pinned launchers list
+        refreshPinnedLaunchers();
+
         // Create the drawer dialog and wire activation (works with dock launcher)
         dashWindow = Qt.createQmlObject("import QtQuick; import \".\"; MenuRepresentation {}", kicker);
         if (dashWindow) {

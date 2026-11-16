@@ -25,9 +25,10 @@ Item {
 	property bool hasActionList: ((model.favoriteId !== null) || (("hasActionList" in model) && (model.hasActionList !== null)))
 
 	function openActionMenu(visualParent, x, y) {
-		var isPinned = (kicker && kicker.isDockPinnedSync) ? kicker.isDockPinnedSync(model.url) : false;
+		var effectiveUrl = model.url || model.favoriteId || "";
+		var isPinned = (kicker && kicker.isDockPinnedSync && effectiveUrl) ? kicker.isDockPinnedSync(effectiveUrl) : false;
 		const actionList = (model.hasActionList !== null && model.actionList) ? model.actionList : [];
-		Tools.fillActionMenu(i18n, actionMenu, actionList, globalFavorites, model.favoriteId, model.url, isPinned);
+		Tools.fillActionMenu(i18n, actionMenu, actionList, globalFavorites, model.favoriteId, effectiveUrl, isPinned);
 		actionMenu.visualParent = visualParent;
 		actionMenu.open(x, y);
 	}
