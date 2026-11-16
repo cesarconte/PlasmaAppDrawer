@@ -11,6 +11,22 @@ Rectangle {
     property var categoryModel: null
     property int totalCount: categoryModel ? categoryModel.count : 0
 
+    function updateCount() {
+        totalCount = categoryModel ? categoryModel.count : 0;
+    }
+
+    onCategoryModelChanged: updateCount()
+
+    Connections {
+        target: categoryCard.categoryModel
+        ignoreUnknownSignals: true
+        function onModelReset() { categoryCard.updateCount(); }
+        function onRowsInserted() { categoryCard.updateCount(); }
+        function onRowsRemoved() { categoryCard.updateCount(); }
+        function onCountChanged() { categoryCard.updateCount(); }
+        function onLayoutChanged() { categoryCard.updateCount(); }
+    }
+
     signal expandRequested()
 
     implicitWidth: 176
@@ -141,7 +157,7 @@ Rectangle {
 
                     // Running dot
                     Rectangle {
-                        visible: (kicker && kicker.isAppRunning && slotRect.itemData) ? kicker.isAppRunning(slotRect.itemData.appId, slotRect.itemData.url) : false
+                        visible: (typeof kicker !== "undefined" && kicker && kicker.isAppRunning && slotRect.itemData) ? kicker.isAppRunning(slotRect.itemData.appId, slotRect.itemData.url) : false
                         width: 4
                         height: 4
                         radius: 2
@@ -153,7 +169,7 @@ Rectangle {
 
                     // Notification Badge
                     CachyBadge {
-                        readonly property string bText: (kicker && kicker.getAppBadge && slotRect.itemData) ? kicker.getAppBadge(slotRect.itemData.appId, slotRect.itemData.url) : ""
+                        readonly property string bText: (typeof kicker !== "undefined" && kicker && kicker.getAppBadge && slotRect.itemData) ? kicker.getAppBadge(slotRect.itemData.appId, slotRect.itemData.url) : ""
                         visible: bText.length > 0
                         text: bText
                         badgeType: "accent"
@@ -199,7 +215,7 @@ Rectangle {
                 acceptedButtons: Qt.RightButton
                 onTapped: (eventPoint) => {
                     if (slotRect.itemData) {
-                        var isPinned = (kicker && kicker.isDockPinnedSync) ? kicker.isDockPinnedSync(slotRect.itemData.url) : false;
+                        var isPinned = (typeof kicker !== "undefined" && kicker && kicker.isDockPinnedSync) ? kicker.isDockPinnedSync(slotRect.itemData.url) : false;
                         var rawActions = [];
                         if (categoryCard.categoryModel && categoryCard.categoryModel.data) {
                             var actData = categoryCard.categoryModel.data(categoryCard.categoryModel.index(slotRect.targetIndex, 0), 265);
@@ -215,7 +231,7 @@ Rectangle {
             ActionMenu {
                 id: slotActionMenu
                 onActionClicked: (actionId, actionArgument) => {
-                    if (Tools.triggerAction(categoryCard.categoryModel, slotRect.targetIndex, actionId, actionArgument, kicker) === true) {
+                    if (Tools.triggerAction(categoryCard.categoryModel, slotRect.targetIndex, actionId, actionArgument, (typeof kicker !== "undefined" ? kicker : null)) === true) {
                         if (typeof root !== "undefined" && root && root.toggle) {
                             root.toggle();
                         } else if (typeof kicker !== "undefined" && kicker && kicker.dashWindow) {

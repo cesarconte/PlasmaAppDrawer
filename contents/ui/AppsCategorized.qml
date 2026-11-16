@@ -11,10 +11,18 @@ Item {
     property var expandedCategoryModel: null
     property string expandedCategoryTitle: ""
     property bool isExpanded: expandedCategoryModel !== null
+    property int refreshKey: 0
+
+    Timer {
+        id: debounceRefreshTimer
+        interval: 60
+        repeat: false
+        onTriggered: appsCategorized.refreshCategories()
+    }
 
     function refreshCategories() {
+        if (typeof rootModel === "undefined" || !rootModel || rootModel.count === 0) return;
         var list = [];
-        if (!rootModel) return;
         for (var i = 4; i < rootModel.count; i++) {
             var name = rootModel.data(rootModel.index(i, 0), Qt.DisplayRole);
             if (!name || String(name).trim() === "" || name === "Inicio y apagado") continue;
@@ -26,15 +34,16 @@ Item {
                 icon: rootModel.data(rootModel.index(i, 0), Qt.DecorationRole)
             });
         }
+        refreshKey++;
         categoriesList = list;
     }
 
     Component.onCompleted: refreshCategories()
 
     Connections {
-        target: rootModel
-        function onCountChanged() { appsCategorized.refreshCategories(); }
-        function onRefreshed() { appsCategorized.refreshCategories(); }
+        target: (typeof rootModel !== "undefined") ? rootModel : null
+        function onCountChanged() { debounceRefreshTimer.restart(); }
+        function onRefreshed() { debounceRefreshTimer.restart(); }
     }
 
     // Overview state: Grid of Category Cards (macOS Tahoe App Library)
@@ -57,10 +66,10 @@ Item {
             // 1. Smart Card: Sugerencias (Top used / recent apps)
             CategoryCard {
                 title: i18n("Sugerencias")
-                categoryModel: rootModel.modelForRow(0)
+                categoryModel: (appsCategorized.refreshKey >= 0 && typeof rootModel !== "undefined" && rootModel && rootModel.count > 0) ? rootModel.modelForRow(0) : null
                 width: overviewFlow.cardWidth
                 onExpandRequested: {
-                    appsCategorized.expandedCategoryModel = rootModel.modelForRow(0);
+                    appsCategorized.expandedCategoryModel = categoryModel;
                     appsCategorized.expandedCategoryTitle = i18n("Sugerencias");
                 }
             }
@@ -68,10 +77,10 @@ Item {
             // 2. Smart Card: Añadidas recientemente
             CategoryCard {
                 title: i18n("Añadidas recientemente")
-                categoryModel: rootModel.modelForRow(2)
+                categoryModel: (appsCategorized.refreshKey >= 0 && typeof rootModel !== "undefined" && rootModel && rootModel.count > 2) ? rootModel.modelForRow(2) : null
                 width: overviewFlow.cardWidth
                 onExpandRequested: {
-                    appsCategorized.expandedCategoryModel = rootModel.modelForRow(2);
+                    appsCategorized.expandedCategoryModel = categoryModel;
                     appsCategorized.expandedCategoryTitle = i18n("Añadidas recientemente");
                 }
             }
@@ -83,10 +92,10 @@ Item {
                 CategoryCard {
                     required property var modelData
                     title: modelData.name || ""
-                    categoryModel: rootModel.modelForRow(modelData.modelIndex)
+                    categoryModel: (appsCategorized.refreshKey >= 0 && typeof rootModel !== "undefined" && rootModel && modelData) ? rootModel.modelForRow(modelData.modelIndex) : null
                     width: overviewFlow.cardWidth
                     onExpandRequested: {
-                        appsCategorized.expandedCategoryModel = rootModel.modelForRow(modelData.modelIndex);
+                        appsCategorized.expandedCategoryModel = categoryModel;
                         appsCategorized.expandedCategoryTitle = modelData.name || "";
                     }
                 }
@@ -177,8 +186,8 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
-            cellWidth: root.cellSizeWidth
-            cellHeight: root.cellSizeHeight
+            cellWidth: (typeof root !== "undefined" && root && root.cellSizeWidth) ? root.cellSizeWidth : 64
+            cellHeight: (typeof root !== "undefined" && root && root.cellSizeHeight) ? root.cellSizeHeight : 72
             model: appsCategorized.expandedCategoryModel
 
             delegate: AppGridViewDelegate {
