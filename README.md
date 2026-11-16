@@ -1,6 +1,6 @@
 <div align="center">
 
-# Tahoe Launcher
+# App Drawer
 
 A modern Launcher for KDE plasma inspired on MacOS!
 

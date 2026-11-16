@@ -33,6 +33,7 @@ import org.kde.plasma.plasmoid 2.0
 import org.kde.kcmutils as KCM
 
 import org.kde.iconthemes as KIconThemes
+import org.kde.kquickcontrols as KQuickControls
 
 
 KCM.SimpleKCM {
@@ -266,6 +267,26 @@ KCM.SimpleKCM {
       Kirigami.FormData.label: i18n("Use system font settings")
       text: i18n("Enabled")
       checked: Plasmoid.configuration.useSystemFontSettings
+    }
+
+    Kirigami.Separator {
+      Kirigami.FormData.isSection: true
+      Kirigami.FormData.label: i18n("Keyboard shortcut")
+    }
+
+    KQuickControls.KeySequenceItem {
+      id: shortcutItem
+      Kirigami.FormData.label: i18n("Global shortcut to open the drawer:")
+      keySequence: Plasmoid.globalShortcut
+      modifierlessAllowed: true
+      onKeySequenceChanged: {
+        Plasmoid.globalShortcut = keySequence
+      }
+      Component.onCompleted: {
+        if (!Plasmoid.globalShortcut || Plasmoid.globalShortcut.toString() === "") {
+          keySequence = "F4"
+        }
+      }
     }
   }
 }

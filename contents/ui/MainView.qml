@@ -1,150 +1,102 @@
 /*****************************************************************************
  *   Copyright (C) 2022 by Friedrich Schriewer <friedrich.schriewer@gmx.net> *
- *                                                                           *
- *   This program is free software; you can redistribute it and/or modify    *
- *   it under the terms of the GNU General Public License as published by    *
- *   the Free Software Foundation; either version 2 of the License, or       *
- *   (at your option) any later version.                                     *
- *                                                                           *
- *   This program is distributed in the hope that it will be useful,         *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of          *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the           *
- *   GNU General Public License for more details.                            *
- *                                                                           *
- *   You should have received a copy of the GNU General Public License       *
- *   along with this program; if not, write to the                           *
- *   Free Software Foundation, Inc.,                                         *
- *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA .          *
+ *   Copyright (C) 2026 CachyOS UI contributors                             *
  ****************************************************************************/
 import QtQuick
 import QtQuick.Layouts
-import Qt5Compat.GraphicalEffects
 import org.kde.plasma.core as PlasmaCore
-import org.kde.plasma.components 3.0 as PlasmaComponents
-import org.kde.coreaddons as KCoreAddons
-
-import org.kde.plasma.plasma5support as P5Support
 import org.kde.kirigami as Kirigami
-
-import "js/colorType.js" as ColorType
+import CachyOS.UI
 
 Item {
-	id: main
-	property bool searching: (searchBar.textField.text != "")
+    id: main
+    property bool searching: (searchBar.textField.text.trim() !== "")
+    property alias isExpanded: appsCategorizedView.isExpanded
 
-	readonly property color textColor: Kirigami.Theme.textColor
-	readonly property string textFont: Kirigami.Theme.defaultFont//plasmoid.configuration.useSystemFontSettings ? Kirigami.Theme.defaultFont : "SF Pro Text"
-	readonly property real textSize: 10//plasmoid.configuration.useSystemFontSettings ? Kirigami.Theme.defaultFont.pointSize : 11
-	readonly property color bgColor: Kirigami.Theme.backgroundColor
-	readonly property color highlightColor: Kirigami.Theme.highlightColor
-	readonly property color highlightedTextColor: Kirigami.Theme.highlightedTextColor
-	readonly property bool isTop: plasmoid.location == PlasmaCore.Types.TopEdge & plasmoid.configuration.launcherPosition != 2 & !plasmoid.configuration.floating
+    readonly property color textColor: CachyPalette.text
+    readonly property string textFont: Kirigami.Theme.defaultFont.family
+    readonly property real textSize: Kirigami.Theme.defaultFont.pointSize
+    readonly property color bgColor: CachyPalette.windowBackground
+    readonly property color highlightColor: CachyTheme.accentColor
+    readonly property color highlightedTextColor: CachyPalette.accentText
+    readonly property bool isTop: plasmoid.location == PlasmaCore.Types.TopEdge & plasmoid.configuration.launcherPosition != 2 & !plasmoid.configuration.floating
 
-	property bool isDarkTheme: ColorType.isDark(bgColor)
-	property color contrastBgColor: isDarkTheme ? Qt.rgba(255, 255, 255, 0.15) : Qt.rgba(0, 0, 0, 0.1)
-	property color dimmedTextColor: Qt.rgba(textColor.r, textColor.g, textColor.b, 0.7)
+    property bool isDarkTheme: CachyPalette.isDark
+    property color contrastBgColor: CachyPalette.cardBackground
+    property color dimmedTextColor: CachyPalette.textMuted
 
-	property bool showAllApps: true
+    function reload() {
+        reset();
+    }
+    function reset() {
+        searchBar.textField.clear();
+        appsCategorizedView.reset();
+    }
 
-	function reload() {
-		searchBar.textField.clear()
-		appList.reset()
-	}
-	function reset(){
-		searchBar.textField.clear()
-		appList.reset()
-	}
+    function showContextMenu(target, x, y, actionList, cb) {
+        if (main.parent && typeof main.parent.showContextMenu === "function") {
+            main.parent.showContextMenu(target, x, y, actionList, cb);
+        } else if (typeof fs !== "undefined" && fs && typeof fs.showContextMenu === "function") {
+            fs.showContextMenu(target, x, y, actionList, cb);
+        } else if (typeof root !== "undefined" && root && typeof root.showContextMenu === "function") {
+            root.showContextMenu(target, x, y, actionList, cb);
+        }
+    }
 
-	ColumnLayout {
+    ColumnLayout {
+        anchors.fill: parent
+        spacing: 0
 
-		anchors.top: parent.top
-		anchors.left: parent.left
-		anchors.right: parent.right
-		anchors.bottom: parent.bottom
+        // Spotlight-style Search Bar Container
+        Rectangle {
+            id: searchBarContainer
+            Layout.fillWidth: true
+            Layout.preferredHeight: 38
+            Layout.maximumHeight: Layout.preferredHeight
+            Layout.rightMargin: fs.innerPadding
+            radius: height / 2
+            color: CachyPalette.cardBackground
+            border.color: CachyPalette.specularBorder
+            border.width: 1
 
-		spacing: 0
+            SearchBar {
+                id: searchBar
+                anchors.fill: parent
+                anchors.leftMargin: 12
+                anchors.rightMargin: 12
+                Keys.forwardTo: main.searching ? [searchListView] : []
+            }
+        }
 
-		SearchBar {
-			id: searchBar
-			Layout.fillWidth: true
-			Layout.preferredHeight: 40
-			Layout.maximumHeight: Layout.preferredHeight
-			Layout.rightMargin: fs.innerPadding
-			showMenuButton: !searching
-			Keys.priority: Keys.AfterItem
-			Keys.forwardTo: searching ? searchList : appList.viewItem
-		}
+        // Divider
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.rightMargin: fs.innerPadding
+            Layout.topMargin: 8
+            Layout.bottomMargin: 8
+            height: 1
+            color: CachyPalette.hardDividerColor
+        }
 
-		Rectangle {
-			Layout.fillWidth: true
-			Layout.rightMargin: fs.innerPadding
-			height: 1.5
-			color: main.contrastBgColor
-		}
+        // Content Area Container (App Library or Spotlight Search)
+        Item {
+            id: contentArea
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
 
-		AllAppsList{
-			id: appList
-			state: "visible"
-			Layout.fillHeight: true
-			Layout.fillWidth: true
+            AppsCategorized {
+                id: appsCategorizedView
+                anchors.fill: parent
+                visible: !main.searching
+            }
 
-			Keys.priority: Keys.AfterItem
-			Keys.forwardTo: searchBar.textField
-
-			visible: opacity > 0
-			states: [
-				State {
-					name: "visible"; when: (!searching)
-					PropertyChanges { target: appList; opacity: 1.0 }
-				},
-				State {
-					name: "hidden"; when: (searching)
-					PropertyChanges { target: appList; opacity: 0.0}
-				}
-			]
-			transitions: [
-				Transition {
-					to: "visible"
-					PropertyAnimation {properties: 'opacity'; duration: 100; easing.type: Easing.OutQuart}
-				},
-				Transition {
-					to: "hidden"
-					PropertyAnimation {properties: 'opacity'; duration: 100; easing.type: Easing.OutQuart}
-				}
-			]
-		}
-
-		SearchList {
-			id: searchList
-			state: "hidden"
-			visible: opacity > 0
-
-			Layout.fillWidth: true
-			Layout.fillHeight: true
-
-			states: [
-				State {
-					name: "visible"; when: (searching)
-					PropertyChanges { target: searchList; opacity: 1.0 }
-				},
-				State {
-					name: "hidden"; when: (!searching)
-					PropertyChanges { target: searchList; opacity: 0.0}
-				}
-			]
-			transitions: [
-				Transition {
-					to: "visible"
-					PropertyAnimation {properties: 'opacity'; duration: 100; easing.type: Easing.OutQuart}
-				},
-				Transition {
-					to: "hidden"
-					PropertyAnimation {properties: 'opacity'; duration: 100; easing.type: Easing.OutQuart}
-				}
-			]
-
-			Keys.priority: Keys.AfterItem
-			Keys.forwardTo: searchBar.textField
-		}
-	}
+            SearchList {
+                id: searchListView
+                anchors.fill: parent
+                visible: main.searching
+                Keys.forwardTo: [searchBar.textField]
+            }
+        }
+    }
 }

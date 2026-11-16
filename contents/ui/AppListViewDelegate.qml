@@ -2,10 +2,11 @@ import QtQuick 2.12
 import QtQuick.Layouts 1.12
 import Qt5Compat.GraphicalEffects
 import org.kde.plasma.components 3.0 as PlasmaComponents
-import org.kde.kirigami 2.13 as Kirigami
+import org.kde.kirigami as Kirigami
 import QtQuick.Controls 2.15
 import QtQuick.Templates as T
 import org.kde.plasma.plasmoid
+import CachyOS.UI
 
 import "../code/tools.js" as Tools
 
@@ -20,10 +21,26 @@ T.ItemDelegate {
 	implicitWidth: Math.max(implicitBackgroundWidth + leftInset + rightInset,
 							implicitContentWidth + leftPadding + rightPadding)
 	implicitHeight: itemHeight
-	leftPadding: compact ? 5 : 8
-	rightPadding: compact ? 5 : 8
-	bottomPadding: compact ? 5 : 8
-	topPadding: compact ? 5 : 8
+	leftPadding: compact ? 6 : 10
+	rightPadding: compact ? 6 : 10
+	bottomPadding: compact ? 6 : 8
+	topPadding: compact ? 6 : 8
+
+	background: Rectangle {
+		radius: CachyTheme.radiusMedium
+		color: {
+			if (ma.containsMouse || (listView.currentIndex === index && listView.activeFocus)) {
+				return CachyPalette.cardBackgroundHover;
+			}
+			return "transparent";
+		}
+		border.width: (ma.containsMouse || (listView.currentIndex === index && listView.activeFocus)) ? 1 : 0
+		border.color: CachyPalette.specularBorder
+
+		Behavior on color {
+			ColorAnimation { duration: 120 }
+		}
+	}
 
 	property bool isDraging: false
 
@@ -46,11 +63,21 @@ T.ItemDelegate {
 	}
 	function actionTriggered(actionId, actionArgument) {
 		var close = (Tools.triggerAction(triggerModel, index, actionId, actionArgument) === true);
-		if (close) { root.toggle(); }
+		if (close) {
+			if (typeof root !== "undefined" && root && root.toggle) {
+				root.toggle();
+			} else if (typeof kicker !== "undefined" && kicker && kicker.dashWindow) {
+				kicker.dashWindow.visible = false;
+			}
+		}
 	}
 	function trigger() {
 		triggerModel.trigger(index, "", null);
-		root.toggle()
+		if (typeof root !== "undefined" && root && root.toggle) {
+			root.toggle();
+		} else if (typeof kicker !== "undefined" && kicker && kicker.dashWindow) {
+			kicker.dashWindow.visible = false;
+		}
 	}
 
  	contentItem: RowLayout {
@@ -83,24 +110,24 @@ T.ItemDelegate {
 				textFormat: Text.PlainText
 				elide: Text.ElideRight
 				wrapMode: Text.NoWrap
+				font.pixelSize: 12
+				font.weight: (ma.containsMouse || listView.currentIndex === index) ? Font.DemiBold : Font.Normal
 				verticalAlignment: Text.AlignVCenter
-			   	//maximumLineCount: root.isMultilineText ? Infinity : 1
-				color: main.textColor
+				color: CachyPalette.text
 			}
 
 			Label {
 				id: descriptionLabel
 				Layout.fillWidth: true
 				visible: text && showDescription
-				opacity: 0.75
 				text: model.description
 				textFormat: Text.PlainText
-				font: Kirigami.Theme.smallFont
+				font.pixelSize: 10
 				elide: Text.ElideRight
 				verticalAlignment: Text.AlignVCenter
 				horizontalAlignment: listDelegate.compact ? Text.AlignRight : Text.AlignLeft
 				maximumLineCount: 1
-				color: main.textColor
+				color: CachyPalette.textMuted
 			}
 		}
 	}

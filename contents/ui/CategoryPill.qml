@@ -1,32 +1,52 @@
 import QtQuick 
 import org.kde.kirigami as Kirigami
+import CachyOS.UI
 
-Text {
+Item {
     id: pill
 
+    property alias text: pillText.text
     property bool selected: false
     signal clicked
 
-    topPadding: 4
-    bottomPadding: topPadding
-    leftPadding: 8
-    rightPadding: 8
-    font.pointSize: 10
+    implicitWidth: pillText.implicitWidth + 24
+    implicitHeight: 28
 
-    color: selected ? "#000000" : main.textColor
-    opacity: selected ? 0.8 : 0.4
-
-   Rectangle {
+    Rectangle {
         id: pillBg
         anchors.fill: parent
-        anchors.centerIn: parent
-        z: -1
-        color: selected ? Qt.rgba(255, 255, 255, 0.5) : main.isDarkTheme ? Qt.rgba(255, 255, 255, 0.2) : Qt.rgba(255, 255, 255, 0.5)
-        radius: 8
+        radius: height / 2
+        color: {
+            if (pill.selected) {
+                return CachyTheme.accentColor;
+            }
+            if (hoverHandler.hovered) {
+                return CachyPalette.cardBackgroundHover;
+            }
+            return CachyPalette.cardBackground;
+        }
+        border.width: 1
+        border.color: pill.selected ? CachyPalette.specularBorder : CachyPalette.subtleBorder
+
+        Behavior on color {
+            ColorAnimation { duration: 120 }
+        }
     }
 
-    MouseArea {
-        anchors.fill: pill
-        onClicked: pill.clicked();
+    Text {
+        id: pillText
+        anchors.centerIn: parent
+        font.pixelSize: 12
+        font.weight: pill.selected ? Font.DemiBold : Font.Normal
+        color: pill.selected ? CachyPalette.accentText : CachyPalette.text
+    }
+
+    HoverHandler {
+        id: hoverHandler
+        cursorShape: Qt.PointingHandCursor
+    }
+
+    TapHandler {
+        onTapped: pill.clicked()
     }
 }

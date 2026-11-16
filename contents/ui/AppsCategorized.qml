@@ -1,127 +1,194 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
+import CachyOS.UI
 
-AppListView {
-	id: appsCategorized
+Item {
+    id: appsCategorized
 
-	showSectionSeparator: false
-	highlightFollowsCurrentItem: false
-	spacing: 0
+    property var categoriesList: []
+    property var expandedCategoryModel: null
+    property string expandedCategoryTitle: ""
+    property bool isExpanded: expandedCategoryModel !== null
 
-	delegate: ColumnLayout {
-		id: category
+    function refreshCategories() {
+        var list = [];
+        if (!rootModel) return;
+        for (var i = 4; i < rootModel.count; i++) {
+            var name = rootModel.data(rootModel.index(i, 0), Qt.DisplayRole);
+            if (!name || String(name).trim() === "" || name === "Inicio y apagado") continue;
+            var sub = rootModel.modelForRow(i);
+            if (!sub || sub.count === 0) continue;
+            list.push({
+                name: name,
+                modelIndex: i,
+                icon: rootModel.data(rootModel.index(i, 0), Qt.DecorationRole)
+            });
+        }
+        categoriesList = list;
+    }
 
-		property var currentCategory: slicedCategories[index]
-		property bool expanded: false
+    Component.onCompleted: refreshCategories()
 
-		width: appsCategorized.availableWidth
-		height: categoryHeader.height + root.cellSizeHeight
-		clip: true
-		spacing: 0
+    Connections {
+        target: rootModel
+        function onCountChanged() { appsCategorized.refreshCategories(); }
+        function onRefreshed() { appsCategorized.refreshCategories(); }
+    }
 
-		ColumnLayout {
-			id: categoryHeader
-			width: parent.width
-			spacing: 10
+    // Overview state: Grid of Category Cards (macOS Tahoe App Library)
+    ScrollView {
+        id: overviewScroll
+        anchors.fill: parent
+        visible: !appsCategorized.isExpanded
+        clip: true
+        ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+        ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
-			/* 
-			* Provides appearance of spacing in the bottom of each category grid 
-			*/
-			Item {
-				Layout.fillWidth: true
-				Layout.fillHeight: true
-				visible: index > 0  // not showing on the first item
-			}
-			Rectangle {
-                id: separator
-				width: parent.width
-				height: 1.5
-                // not showing on the first item to avoid duplicating with searchbar separator
-				color: index > 0 ? main.contrastBgColor : "transparent"
-			}
-			RowLayout {
-				Layout.fillWidth: true
+        Flow {
+            id: overviewFlow
+            width: overviewScroll.availableWidth > 0 ? overviewScroll.availableWidth : overviewScroll.width
+            spacing: 12
+            padding: 8
 
-				Text {
-					text:currentCategory.name
-					font.bold: true
-					font.pixelSize: 15
-					color: main.textColor
-				}
+            readonly property real cardWidth: Math.max(160, Math.floor((width - 28) / 2))
 
-				Item {
-					Layout.fillWidth: true
-					Layout.fillHeight: true
-				}
+            // 1. Smart Card: Sugerencias (Top used / recent apps)
+            CategoryCard {
+                title: i18n("Sugerencias")
+                categoryModel: rootModel.modelForRow(0)
+                width: overviewFlow.cardWidth
+                onExpandRequested: {
+                    appsCategorized.expandedCategoryModel = rootModel.modelForRow(0);
+                    appsCategorized.expandedCategoryTitle = i18n("Sugerencias");
+                }
+            }
 
-				Text {
-					Layout.alignment: Qt.AlignHCenter | Qt.AlignRight
-					text: category.expanded ? i18n("Show less") : i18n("Show more")
-					visible: grid.rows > 1
-					font.bold: true
-					font.pixelSize: 15
-					color: main.textColor
-					MouseArea {
-						anchors.fill: parent
-						onClicked: {
-						    category.expanded = !category.expanded
-						}
-					}
-				}
-			}
+            // 2. Smart Card: Añadidas recientemente
+            CategoryCard {
+                title: i18n("Añadidas recientemente")
+                categoryModel: rootModel.modelForRow(2)
+                width: overviewFlow.cardWidth
+                onExpandRequested: {
+                    appsCategorized.expandedCategoryModel = rootModel.modelForRow(2);
+                    appsCategorized.expandedCategoryTitle = i18n("Añadidas recientemente");
+                }
+            }
 
-			/* 
-			* Provides appearance of spacing between category header
-			* and the start of each category grid 
-			*/
+            // 3. Regular Categories from system (Desarrollo, Gráficos, Internet, etc.)
+            Repeater {
+                model: appsCategorized.categoriesList
 
-			Item {
-				Layout.fillWidth: true
-				Layout.fillHeight: true
-			}
-		}
+                CategoryCard {
+                    required property var modelData
+                    title: modelData.name || ""
+                    categoryModel: rootModel.modelForRow(modelData.modelIndex)
+                    width: overviewFlow.cardWidth
+                    onExpandRequested: {
+                        appsCategorized.expandedCategoryModel = rootModel.modelForRow(modelData.modelIndex);
+                        appsCategorized.expandedCategoryTitle = modelData.name || "";
+                    }
+                }
+            }
+        }
+    }
 
+    // Expanded state: Full view of a selected category
+    ColumnLayout {
+        id: expandedView
+        anchors.fill: parent
+        visible: appsCategorized.isExpanded
+        spacing: 8
+        anchors.margins: 6
 
-		GridView {
-			id: grid
+        // Expanded Header
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 8
 
-			leftMargin: fs.innerPadding / 2 // Centers the grid
-			
-			property var rows: {
-				if(grid.model.count%root.columns == 0 )  {
-					return Math.floor(grid.model.count/root.columns);
-				}
-				return Math.floor((grid.model.count/root.columns)+1);
-			}
+            // Back button (← Biblioteca)
+            Rectangle {
+                Layout.preferredHeight: 28
+                Layout.preferredWidth: backContent.implicitWidth + 20
+                radius: height / 2
+                color: backHover.hovered ? CachyPalette.cardBackgroundHover : CachyPalette.cardBackground
+                border.width: 1
+                border.color: CachyPalette.specularBorder
 
-			property var expandedHeight: rows * root.cellSizeHeight
-			property bool canMoveWithKeyboard: false
+                RowLayout {
+                    id: backContent
+                    anchors.centerIn: parent
+                    spacing: 4
 
-			interactive: false
-			width: appsCategorized.availableWidth
-			height: expandedHeight
-			cellWidth: root.cellSizeWidth
-			cellHeight: root.cellSizeHeight
-			model: rootModel.modelForRow(currentCategory.modelIndex);
+                    Kirigami.Icon {
+                        Layout.preferredWidth: 14
+                        Layout.preferredHeight: 14
+                        source: "arrow-left"
+                        color: CachyPalette.text
+                    }
 
-			delegate: AppGridViewDelegate {
-				triggerModel: grid.model
-			}
-		}
+                    Text {
+                        text: i18n("Biblioteca")
+                        font.pixelSize: 11
+                        font.weight: Font.Medium
+                        color: CachyPalette.text
+                    }
+                }
 
-		onExpandedChanged: updateHeight()
-		
-		Behavior on height {
-			NumberAnimation { duration: 200 }
-		}
+                HoverHandler {
+                    id: backHover
+                    cursorShape: Qt.PointingHandCursor
+                }
 
-		function updateHeight () {
-			if(category.expanded) {
-				category.height = grid.expandedHeight + categoryHeader.height;
-			}else {
-				category.height = root.cellSizeHeight + categoryHeader.height;
-			}
-		}
-	}
+                TapHandler {
+                    onTapped: {
+                        appsCategorized.expandedCategoryModel = null;
+                        appsCategorized.expandedCategoryTitle = "";
+                    }
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: appsCategorized.expandedCategoryTitle
+                font.pixelSize: 15
+                font.weight: Font.Bold
+                color: CachyPalette.text
+                elide: Text.ElideRight
+            }
+
+            Text {
+                text: (appsCategorized.expandedCategoryModel ? appsCategorized.expandedCategoryModel.count : 0) + " " + i18n("apps")
+                font.pixelSize: 11
+                color: CachyPalette.textMuted
+            }
+        }
+
+        Rectangle {
+            Layout.fillWidth: true
+            height: 1
+            color: CachyPalette.hardDividerColor
+        }
+
+        // Full grid of apps in the expanded category
+        GridView {
+            id: expandedGrid
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            cellWidth: root.cellSizeWidth
+            cellHeight: root.cellSizeHeight
+            model: appsCategorized.expandedCategoryModel
+
+            delegate: AppGridViewDelegate {
+                triggerModel: expandedGrid.model
+            }
+        }
+    }
+
+    function reset() {
+        expandedCategoryModel = null;
+        expandedCategoryTitle = "";
+    }
 }

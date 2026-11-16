@@ -8,7 +8,7 @@
   <group name="General">
     <entry name="icon" type="String">
       <label>The name of the icon to use for the compact representation (e.g. on a small panel).</label>
-      <default>start-here-kde-symbolic</default>
+      <default>launchpad</default>
     </entry>
     <entry name="useCustomButtonImage" type="Bool">
       <label>Whether to use a custom image instead of an icon in the compact representation (e.g. on a small panel).</label>
@@ -21,7 +21,7 @@
 
     <entry name="showAllAppsCategorized" type="Bool">
       <label>Show apps categorized.</label>
-      <default>false</default>
+      <default>true</default>
     </entry>
      <entry name="showAllAppsInList" type="Bool">
       <label>Show apps in list.</label>
@@ -29,7 +29,7 @@
     </entry>
      <entry name="showAllAppsInGrid" type="Bool">
       <label>Show apps in a grid.</label>
-      <default>true</default>
+      <default>false</default>
     </entry>
     <entry name="launcherPosition" type="Int">
       <label>Where is the launcher supposed to open? 1: Auto (Bottom or Top panel) 2: Bottom or top center 3: Screen center</label>

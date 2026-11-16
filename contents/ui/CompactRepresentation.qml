@@ -30,6 +30,12 @@ import org.kde.kirigami as Kirigami
 Item {
     id: root
 
+    // Hide the compact representation on panels: the drawer is opened via
+    // the dock launcher / global shortcut instead (macOS-like).
+    visible: false
+    width: 0
+    height: 0
+
     property QtObject dashWindow: null
     readonly property bool useCustomButtonImage: (Plasmoid.configuration.useCustomButtonImage && Plasmoid.configuration.customButtonImage.length != 0)
 
@@ -40,7 +46,7 @@ Item {
         height: Plasmoid.configuration.activationIndicator ? parent.height * 0.65 : parent.height
         anchors.centerIn: parent
 
-        source: useCustomButtonImage ? Plasmoid.configuration.customButtonImage : Plasmoid.configuration.icon
+        source: useCustomButtonImage ? Plasmoid.configuration.customButtonImage : (Plasmoid.configuration.icon || "launchpad")
 
         active: mouseArea.containsMouse
 
@@ -57,14 +63,11 @@ Item {
         hoverEnabled: true
 
         onClicked: {
-            dashWindow.visible = !dashWindow.visible;
+            // Drawer is toggled via main.qml (activated signal)
         }
     }
 
-    Component.onCompleted: {
-        dashWindow = Qt.createQmlObject("MenuRepresentation {}", root);
-        plasmoid.activated.connect(function() {
-            dashWindow.visible = !dashWindow.visible;
-        });
-    }
+    // Drawer dialog is managed by main.qml so it works even when this rep is hidden.
+
+
 }

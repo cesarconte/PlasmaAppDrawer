@@ -133,7 +133,7 @@ ColumnLayout {
 	Component {
 		id: applicationsCategorizedViewComponent
 		AppsCategorized {
-			model: slicedCategories
+			slicedCategoriesList: allApps.slicedCategories
 			anchors.fill: parent
 		}
 	}

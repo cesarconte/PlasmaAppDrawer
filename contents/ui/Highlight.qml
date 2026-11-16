@@ -2,6 +2,7 @@ import QtQuick
 import org.kde.ksvg as KSvg
 import org.kde.kirigami as Kirigami
 import Qt5Compat.GraphicalEffects
+import CachyOS.UI
 
 Rectangle {
     id: highlight
@@ -42,9 +43,9 @@ Rectangle {
         return view ? view.width - view.leftMargin - view.rightMargin : undefined;
     } 
 
-    radius: 10
+    radius: CachyTheme.radiusMedium
     z: -20
-    color: main.contrastBgColor//"transparent"
+    color: CachyPalette.cardBackgroundHover
     clip: true
 
     // apply rounded corners mask

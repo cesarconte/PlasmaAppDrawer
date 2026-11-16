@@ -1,8 +1,8 @@
 import QtQuick 2.12
-import Qt5Compat.GraphicalEffects
 import org.kde.plasma.components 3.0 as PlasmaComponents
 import org.kde.kirigami as Kirigami
 import QtQuick.Controls 2.15
+import CachyOS.UI
 
 import "../code/tools.js" as Tools
 
@@ -20,54 +20,106 @@ Item {
 
 	property bool isDraging: false
 	property bool highlighted: false
+	readonly property bool isSelected: (grid.canMoveWithKeyboard ? focus : highlighted)
 
 	property bool hasActionList: ((model.favoriteId !== null) || (("hasActionList" in model) && (model.hasActionList !== null)))
-		
 
 	function openActionMenu(visualParent, x, y) {
-		aboutToShowActionMenu(actionMenu);
+		var isPinned = (kicker && kicker.isDockPinnedSync) ? kicker.isDockPinnedSync(model.url) : false;
+		const actionList = (model.hasActionList !== null && model.actionList) ? model.actionList : [];
+		Tools.fillActionMenu(i18n, actionMenu, actionList, globalFavorites, model.favoriteId, model.url, isPinned);
 		actionMenu.visualParent = visualParent;
 		actionMenu.open(x, y);
 	}
 
 	function trigger() {
 		triggerModel.trigger(index, "", null);
-		root.toggle()
+		if (typeof root !== "undefined" && root && root.toggle) {
+			root.toggle();
+		} else if (typeof kicker !== "undefined" && kicker && kicker.dashWindow) {
+			kicker.dashWindow.visible = false;
+		}
 	}
 
-	onAboutToShowActionMenu: actionMenu => {
-		const actionList = (model.hasActionList !== null) ? model.actionList : [];
-		Tools.fillActionMenu(i18n, actionMenu, actionList, globalFavorites, model.favoriteId);
-	}
 	onActionTriggered: (actionId, actionArgument) => {
-		if (Tools.triggerAction(triggerModel, model.index, actionId, actionArgument) === true) {
-			kicker.expanded = false;
+		if (Tools.triggerAction(triggerModel, model.index, actionId, actionArgument, kicker) === true) {
+			if (typeof root !== "undefined" && root && root.toggle) {
+				root.toggle();
+			} else if (typeof kicker !== "undefined" && kicker && kicker.dashWindow) {
+				kicker.dashWindow.visible = false;
+			}
+		}
+	}
+
+	Rectangle {
+		id: cardBg
+		anchors.fill: parent
+		anchors.margins: 4
+		radius: CachyTheme.radiusMedium
+		color: isSelected ? CachyPalette.cardBackgroundHover : "transparent"
+		border.width: isSelected ? 1 : 0
+		border.color: CachyPalette.specularBorder
+
+		Behavior on color {
+			ColorAnimation { duration: 120 }
 		}
 	}
 
  	Kirigami.Icon {
 		id: appicon
-		y: (2 * highlightItemSvg.margins.top) 
+		anchors.top: parent.top
+		anchors.topMargin: 10
 		anchors.horizontalCenter: parent.horizontalCenter
 		width: root.iconSize
 		height: width
 		source: model.decoration
+		scale: isSelected ? 1.06 : 1.0
+
+		Behavior on scale {
+			NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+		}
+	}
+
+	// macOS Running Indicator Dot
+	Rectangle {
+		id: runningDot
+		visible: (kicker && kicker.isAppRunning) ? kicker.isAppRunning(model.appId, model.url) : false
+		width: 4
+		height: 4
+		radius: 2
+		anchors.top: appicon.bottom
+		anchors.topMargin: 2
+		anchors.horizontalCenter: parent.horizontalCenter
+		color: CachyTheme.accentColor
+	}
+
+	// macOS Notification Badge
+	CachyBadge {
+		id: notifBadge
+		readonly property string badgeVal: (kicker && kicker.getAppBadge) ? kicker.getAppBadge(model.appId, model.url) : ""
+		visible: badgeVal.length > 0
+		text: badgeVal
+		badgeType: "accent"
+		anchors.top: appicon.top
+		anchors.topMargin: -4
+		anchors.right: appicon.right
+		anchors.rightMargin: -6
 	}
 
 	PlasmaComponents.Label {
 		id: appname
 		text: ("name" in model ? model.name : model.display)
 		font.family: main.textFont
-		font.pointSize: main.textSize
-		font.weight: 650
-		color: main.textColor
+		font.pixelSize: 11
+		font.weight: isSelected ? Font.DemiBold : Font.Normal
+		color: CachyPalette.text
 		anchors {
 			top: appicon.bottom
 			left: parent.left
 			right: parent.right
-			topMargin: Kirigami.Units.largeSpacing * 1.2
-			leftMargin: Kirigami.Units.smallSpacing
-			rightMargin: Kirigami.Units.smallSpacing
+			topMargin: 8
+			leftMargin: 4
+			rightMargin: 4
 		}
 		textFormat: Text.PlainText
 		elide: Text.ElideMiddle
@@ -76,49 +128,6 @@ Item {
 		wrapMode: Text.Wrap
 	}
 
-	
-	Rectangle {
-		id: appiconHighlight
-			
-		width: appicon.width + 4 * highlightItemSvg.margins.top
-		height: appicon.height + 4 * highlightItemSvg.margins.top
-		radius: 14
-		color: "transparent"
-		border.width: 2
-		border.color: main.dimmedTextColor
-
-		anchors.top: parent.top
-		anchors.horizontalCenter: parent.horizontalCenter
-	}
-
-	DropShadow {
-		id: appIconShadow
-		visible: true
-		anchors.fill: appicon
-	 	// cached: true
-		horizontalOffset: 0
-		verticalOffset: 0
-		radius: 15.0
-		samples: 16
-		color: "#000000"//main.glowColor1
-		source: appicon
-
-	}
-	state: "default"
-	states: [
-		State {
-			name: "highlight"; when: (grid.canMoveWithKeyboard ? focus : highlighted)
-			PropertyChanges { target: appIconShadow;  color: "#4D000000"}
-			PropertyChanges { target: appiconHighlight;  opacity: 0.4}
-		},
-		State {
-			name: "default"; when: (grid.canMoveWithKeyboard ? !focus : !highlighted)
-			PropertyChanges { target: appIconShadow; color: "#33000000"}
-			PropertyChanges { target: appiconHighlight;  opacity: 0}
-		}
-	]
-	transitions: highlight
-	
 	MouseArea {
 		id: ma
 		anchors.fill: parent

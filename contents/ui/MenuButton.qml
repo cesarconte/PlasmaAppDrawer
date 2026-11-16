@@ -2,6 +2,7 @@ import QtQuick
 import org.kde.plasma.plasmoid
 import org.kde.plasma.components 3.0 as PC3
 import org.kde.plasma.extras as PlasmaExtras
+import CachyOS.UI
 
 Item {
 
@@ -52,7 +53,7 @@ Item {
         icon.name: "application-menu" 
 
         background: Rectangle {
-            color: button.down ? main.contrastBgColor : "transparent"
+            color: button.down ? CachyPalette.cardBackgroundHover : "transparent"
             radius: height / 2
         }
         onPressed: contextMenu.openRelative()
