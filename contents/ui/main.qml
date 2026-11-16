@@ -112,10 +112,18 @@ PlasmoidItem {
     property var pinnedLaunchersList: []
 
     function refreshPinnedLaunchers() {
-        executable.exec("grep '^launchers=' ~/.config/macosdockrc | tail -n 1", function(stdout) {
-            var line = stdout.trim().replace(/^launchers=/, "");
-            if (line.length > 0) {
-                pinnedLaunchersList = line.split(",");
+        executable.exec("/home/cesar/.local/bin/macos-dock-pin list", function(stdout) {
+            var raw = stdout.trim();
+            if (raw.length > 0) {
+                var items = raw.split(/[\r\n,]+/);
+                var valid = [];
+                for (var i = 0; i < items.length; i++) {
+                    var s = items[i].trim();
+                    if (s.length > 0) valid.push(s);
+                }
+                if (valid.length > 0) {
+                    pinnedLaunchersList = valid;
+                }
             }
         });
     }
@@ -138,6 +146,21 @@ PlasmoidItem {
         }
         var isPinned = isDockPinnedSync(cleanUrl);
         var action = isPinned ? "remove" : "add";
+
+        // Optimistically update pinnedLaunchersList in memory immediately
+        var cleanTarget = cleanUrl.replace("applications:", "").replace(/^.*[\\\/]/, "").toLowerCase();
+        var newList = [];
+        for (var i = 0; i < pinnedLaunchersList.length; i++) {
+            var p = String(pinnedLaunchersList[i]).toLowerCase();
+            if (p.indexOf(cleanTarget) === -1) {
+                newList.push(pinnedLaunchersList[i]);
+            }
+        }
+        if (!isPinned) {
+            newList.push(cleanUrl);
+        }
+        pinnedLaunchersList = newList;
+
         executable.exec("/home/cesar/.local/bin/macos-dock-pin " + action + " '" + cleanUrl + "'", function() {
             refreshPinnedLaunchers();
         });
